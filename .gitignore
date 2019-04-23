@@ -26,3 +26,6 @@ vignettes/*.pdf
 rsconnect/
 .Rproj.user
 payer_model_vol2.Rproj
+# data files
+*.rds
+*.arff
