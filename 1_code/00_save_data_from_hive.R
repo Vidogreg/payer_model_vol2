@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # Introduction
 # -----------------------------------------------------------------------------
-# Here, we load v5 datasets from hive
+# Here, we load datasets from hive
 
 
 # -----------------------------------------------------------------------------
@@ -18,7 +18,8 @@ packageTest('odbc')
 
 
 ## Define variables
-hiveTable <- 'ga_972_v5_payer_dataset'
+hiveTable <- 'ga_972_v6_payer_dataset'
+project <- 'SY'
 
 con <- DBI::dbConnect(
   odbc::odbc(),
@@ -28,8 +29,9 @@ con <- DBI::dbConnect(
 
 query <- paste(
   'SELECT * ', 'FROM vgregor.', hiveTable,
-  ' WHERE days_in_game = 0 AND project = \'SY\' AND',
-  ' register_platform IN (\'google_play\', \'apple_appstore\')',
+  ' WHERE days_in_game = 0 AND project = \'', project, '\' AND',
+  ' register_platform IN (\'google_play\')',
+  # ' register_platform IN (\'google_play\', \'apple_appstore\')',
   # ' LIMIT 100',
   sep = ''
 )
@@ -52,8 +54,7 @@ for (col in colnames(dfLoad)) {
 
 
 ## save to rds file
-saveRDS(dfLoad, file = file.path('0_data', paste(hiveTable, '_SY_GP&iOS_d0.rds', sep = '')))
-# saveRDS(dfLoad, file = file.path('0_data', paste(hiveTable, '_SY_GP&iOS_d1.rds', sep = '')))
+saveRDS(dfLoad, file = file.path('0_data', paste(hiveTable, '_', project, '_GP_d0.rds', sep = '')))
 
 
 ## Notes

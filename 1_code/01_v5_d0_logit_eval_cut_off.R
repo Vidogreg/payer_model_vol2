@@ -1,15 +1,16 @@
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
 # Introduction
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
 # Evaluate logit model on v5 dataset
 
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
 # Main code
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
 
 ## define config variables
-trainRegMonth <- '2018-09-01'
+trainRegMonthMin <- '2018-06-01'
+trainRegMonthMax <- '2018-06-01'
 testRegMonth <- '2018-10-01'
 
 
@@ -36,17 +37,20 @@ dat <- dfLoad[
     'd0_session_count',
     'd0_session_time',
     'd0_login_count',
-    'dx_gem_count',
-    'dx_gem_spent',
+    # 'dx_gem_count',
+    # 'dx_gem_spent',
     'dy_pay_count'
   )]
 dat$dy_payer <- dat$dy_pay_count > 0
 
-datTrain <- dat[register_month == trainRegMonth, ]
-datTrain <- datTrain[, c('player_id', 'register_month', 'dy_pay_count') := NULL]
+datTrain <- dat[
+  register_month >= trainRegMonthMin & register_month <= trainRegMonthMax, ]
+datTrain <- datTrain[
+  , c('player_id', 'register_month', 'dy_pay_count') := NULL]
 
 datTest <- dat[register_month == testRegMonth, ]
-datTest <- datTest[, c('player_id', 'register_month', 'dy_pay_count') := NULL]
+datTest <- 
+  datTest[, c('player_id', 'register_month', 'dy_pay_count') := NULL]
 
 
 ## Calculate optimal cut-off from train dataset using CV
@@ -112,3 +116,21 @@ print(list(
   TPR = TP/(TP + FN),
   FPR = FP/(TN + FP)
 ))
+
+
+# # TEMP
+# # model_fit histograms
+# d1 <- density(datTest[dy_payer == TRUE, ]$model_fit)
+# d2 <- density(datTest[dy_payer == FALSE, ]$model_fit)
+# plot(d2$x, d2$y/10, type = 'l')
+# lines(d1$x, d1$y)
+# 
+# d1 <- density(datTest[dx_pay_count > 0, ]$model_fit)
+# d2 <- density(datTest[dx_pay_count == 0, ]$model_fit)
+# plot(d2$x, d2$y/10, type = 'l')
+# lines(d1$x, d1$y)
+# 
+# hist(datTest[dx_pay_count > 0 & dy_payer == TRUE, ]$model_fit, 100)
+# hist(datTest[dx_pay_count > 0 & dy_payer == FALSE, ]$model_fit, 100)
+# hist(datTest[dx_pay_count == 0 & dy_payer == TRUE, ]$model_fit, 100)
+# hist(datTest[dx_pay_count == 0 & dy_payer == FALSE, ]$model_fit, 100)
