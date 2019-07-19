@@ -1,0 +1,16 @@
+[1] "ga_972_v6_payer_dataset_DA_GP_d0.rds"
+    train_reg_month      test_reg_month        cut_off_full
+       "2018-08-01"        "2018-10-01"  0.10271780679457
+    train_reg_month      test_reg_month        cut_off_full
+       "2018-09-01"        "2018-11-01"  0.109224976047975
+    train_reg_month      test_reg_month        cut_off_full
+       "2018-10-01"        "2018-12-01"  0.0972532987078855
+
+
+[1] "ga_972_v6_payer_dataset_SY_GP_d0.rds"
+    train_reg_month      test_reg_month        cut_off_full
+       "2018-08-01"        "2018-10-01"  0.149103616293468
+    train_reg_month      test_reg_month        cut_off_full
+       "2018-09-01"        "2018-11-01"  0.147360654202155
+    train_reg_month      test_reg_month        cut_off_full
+       "2018-10-01"        "2018-12-01"  0.153421607370666

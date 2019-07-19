@@ -1,0 +1,36 @@
+ga_972_v5_payer_dataset_SY_GP&iOS_d0.rds
+
+trainRegMonth <- '2018-06-01'
+testRegMonth <- '2018-10-01'
+register_platform == 'google_play'
+source == 'marketing'
+
+
+> source('C:/Users/vgregor/OneDrive - PXFD/_PIXEL FEDERATION/GA issues/Games General/GA-972 Payer model/payer_model_vol2/1_code/01_v5_logit_cut_off.R')
+
+cut_off_cv_0.1q  cut_off_cv_avg cut_off_cv_0.9q 
+      0.1475360       0.1556829       0.1629639 
+cut_off_full_0.9     cut_off_full cut_off_full_1.1 
+       0.1397116        0.1552351        0.1707586 
+
+
+$`used_cut_off`
+[1] 0.1552351
+
+$confusion_matrix
+                   actual
+                   FALSE  TRUE
+  prediction FALSE 55898   520
+             TRUE    488   272
+
+Precision = Positive Predictive Value
+$precision
+[1] 0.3578947
+
+Sensitivity = Recall = hit rate = true positive rate
+$TPR
+[1] 0.3434343
+
+Fallout = false positive rate
+$FPR
+[1] 0.008654631

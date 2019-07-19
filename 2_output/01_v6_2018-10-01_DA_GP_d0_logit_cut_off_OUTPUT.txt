@@ -1,0 +1,36 @@
+ga_972_v6_payer_dataset_DA_GP_d0.rds
+
+trainRegMonthMin <- '2018-08-01'
+trainRegMonthMax <- '2018-08-01'
+testRegMonth <- '2018-10-01'
+register_platform == 'google_play'
+source == 'marketing'
+
+
+> source('C:/Users/vgregor/OneDrive - PXFD/_PIXEL FEDERATION/GA issues/Games General/GA-972 Payer model/payer_model_vol2/1_code/02_v6_d0_logit_cut_off.R')
+
+cut_off_cv_0.1q  cut_off_cv_avg cut_off_cv_0.9q 
+     0.09245161      0.10320775      0.11697845 
+cut_off_full_0.9     cut_off_full cut_off_full_1.1 
+      0.09244603       0.10271781       0.11298959
+
+$`used_cut_off`
+[1] 0.1027178
+
+$confusion_matrix
+             actual
+             FALSE  TRUE
+  pred FALSE 70212   529
+  	TRUE   422   173
+
+Precision = Positive Predictive Value
+$precision
+[1] 0.2907563
+
+Sensitivity = Recall = hit rate = true positive rate
+$TPR
+[1] 0.2464387
+
+Fallout = false positive rate
+$FPR
+[1] 0.00597446
