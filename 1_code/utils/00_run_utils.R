@@ -27,5 +27,5 @@ for(fileName in fileArray) {
 ## load useful packages
 packageTest('data.table')
 packageTest('caret')
-# packageTest('pROC')
+packageTest('pROC')
 # packageTest('PRROC')
