@@ -30,3 +30,26 @@ printOutput <- function(output, cex = 0.7) {
   text(0, 1, paste(tmp, collapse='\n'), adj = c(0,1), family = 'mono', cex = cex)
   box()
 }
+
+
+## Load .rds file with check and print
+loadRds <- function(filePath, varName, check = TRUE) {
+  loadRdsAux <- function(filePath = filePath) {
+    print(Sys.time())
+    print(filePath %+% ' loading...')
+    dfLoadAux <- data.table(readRDS(filePath))
+    print(Sys.time())
+    print(filePath %+% ' loaded to memory')
+    dfLoadAux
+  }
+  
+  if(check) {
+    if(!exists(varName)) {
+      dfLoad <- loadRdsAux(filePath)
+    }
+  } else {
+    dfLoad <- loadRdsAux(filePath)
+  }
+  
+  dfLoad
+}

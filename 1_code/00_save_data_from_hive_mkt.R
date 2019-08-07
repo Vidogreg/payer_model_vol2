@@ -22,9 +22,8 @@ packageTest('plyr')
 hiveTableFeat <- 'payer_model_features'
 hiveTableLab <- 'payer_model_labels'
 project <- 'DA'
-registerDateFrom <- '2019-02-01'
-registerDateTo <- '2019-05-31'
-# registerDateTo <- '2019-02-02'
+registerDateFrom <- '2019-04-01'
+registerDateTo <- '2019-06-30'
 
 con <- DBI::dbConnect(
   odbc::odbc(),

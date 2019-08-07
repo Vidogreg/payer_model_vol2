@@ -16,6 +16,8 @@ evalLogitModel <- function(ref, fit) {
     rocObj <- roc(
       response = refFactor,
       predictor = fit,
+      levels = c(FALSE, TRUE),
+      direction = '<',
       auc = TRUE
     )
     
@@ -34,6 +36,7 @@ evalLogitModel <- function(ref, fit) {
     )$minimum
     
     pred <- factor(fit >= cutOffOptimal, levels = c(FALSE, TRUE))
+    rcd <- length(pred[pred == TRUE])/length(ref[ref == TRUE])
     
     confMatrix <- confusionMatrix(
       data = pred,
@@ -44,6 +47,7 @@ evalLogitModel <- function(ref, fit) {
     rocObj <- NULL
     rocPlot <- list(auc = NULL)
     cutOffOptimal <- NULL
+    rcd <- NULL
     confMatrix <- NULL
   }
   
@@ -51,6 +55,7 @@ evalLogitModel <- function(ref, fit) {
     rocPlot = rocPlot,
     auc = rocObj$auc,
     cutOff = cutOffOptimal,
+    relativeCountDifference = rcd,
     confMatrix = confMatrix
   )
   
