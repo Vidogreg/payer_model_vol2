@@ -28,7 +28,7 @@ config <- list(
 ### Run utils
 source('1_code/utils/00_run_utils.R')
 packageTest('corrplot')
-# packageTest('PerformanceAnalytics')
+packageTest('gridExtra')
 
 
 ### Load data
@@ -87,78 +87,96 @@ corrP <- cor.mtest(corrMatrix)
 
 ### Train and evaluate models
 ## Define models
-modelFormulas <- list(
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_revenue'
-  )),
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_pay_count'
-  )),
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_login_count'
-  )),
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_session_count'
-  )),
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_session_time'
-  )),
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_gems_count'
-  )),
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_gems_spent'
-  )),
-  
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_revenue +',
-    'dx_login_count'
-  )),
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_revenue +',
-    'dx_session_count'
-  )),
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_revenue +',
-    'dx_session_time'
-  )),
-  
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_revenue +',
-    'dx_session_time +',
-    'dx_gems_count'
-  )),
-  as.formula(paste(
-    'dy_payer ~',
-    'dx_revenue +',
-    'dx_session_time +',
-    'dx_gems_spent'
-  ))
-  
-  # as.formula(paste(
-  #   'dy_payer ~',
-  #   'tier +',
-  #   'dx_pay_count +',
-  #   'dx_revenue +',
-  #   'dx_session_count +',
-  #   'dx_session_time +',
-  #   'dx_session_days +',
-  #   'dx_login_count +',
-  #   'dx_gems_count +',
-  #   'dx_gems_spent'
-  # ))
-)
+{
+  modelFormulas <- list(
+    # one-variable models
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_revenue'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_pay_count'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_login_count'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_session_count'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_session_time'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_gems_count'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_gems_spent'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'tier'
+    )),
+    
+    # two-variable models (revenue + activity)
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_revenue +',
+      'dx_login_count'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_revenue +',
+      'dx_session_count'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_revenue +',
+      'dx_session_time'
+    )),
+    
+    # three-variable models(revenue + session_time + gems)
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_revenue +',
+      'dx_session_time +',
+      'dx_gems_count'
+    )),
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_revenue +',
+      'dx_session_time +',
+      'dx_gems_spent'
+    )),
+    
+    # best model so far with tier
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_revenue +',
+      'dx_session_time +',
+      'tier'
+    )),
+    
+    # full model for comparison
+    as.formula(paste(
+      'dy_payer ~',
+      'tier +',
+      'dx_pay_count +',
+      'dx_revenue +',
+      'dx_session_count +',
+      'dx_session_time +',
+      'dx_session_days +',
+      'dx_login_count +',
+      'dx_gems_count +',
+      'dx_gems_spent'
+    ))
+  )
+}
 
 ## Train models
 models <- lapply(
@@ -171,6 +189,7 @@ models <- lapply(
     )
   }
 )
+print(paste(length(models), "models trained"))
 
 ## evaluate on test data
 modelEvals <- lapply(
@@ -181,6 +200,22 @@ modelEvals <- lapply(
       fit = predict.glm(m, newdata = datTest, type = 'response')
     )
   }
+)
+print(paste(length(models), "models evaluated"))
+
+modelSummary <- data.frame(
+  model_id = 1:length(models),
+  rank = sapply(models, function(m) {m$rank}),
+  auc = sapply(modelEvals, function(m) {m$auc}),
+  cut_off = sapply(modelEvals, function(m) {m$cutOff}),
+  rcd = sapply(modelEvals, function(m) {m$relativeCountDifference}),
+  sensitivity = sapply(
+    modelEvals,
+    function(m) {
+      t <- m$confMatrix$table
+      t[2, 2]/(t[1, 2] + t[2, 2])
+    }
+  )
 )
 
 summaryText <- paste(
@@ -198,10 +233,16 @@ summaryText <- paste(
   'Check session features with dx_revenue\n',
   '  dx_session_count ~> dx_session_time > dx_login_count (time is cont.)\n',
   'Check gem features with previous\n',
-  '  dx_gems_spent = dx_gems_count (spent is cont.)\n'
+  '  dx_gems_spent = dx_gems_count (spent is cont.)\n',
+  '  gems do not add anything and are correlated with revenue\n',
+  'Check tier\n',
+  '  it bends the ROC curve in a weird way but improves the model\n',
+  'Comparison with the full model that it has slightly better performance.\n',
+  'It should be compared with cross-validation whether this difference is robust.\n',
+  'Best model so far has: dx_revenue, dx_session_time, tier'
 )
 # summaryText <- paste(
-#   'Summary for DA:\n'
+#   'Summary for SY:\n'
 # )
 
 
@@ -222,10 +263,21 @@ corrplot(
   order = 'hclust', method = 'number', type = 'upper'
 )
 
-printOutput(modelFormulas)
+printOutput(modelFormulas[1:10])
+printOutput(modelFormulas[11:length(modelFormulas)])
+printOutput(modelSummary)
+grid.arrange(
+  ggplot(modelSummary, aes(model_id, rank)) + geom_col(),
+  ggplot(modelSummary, aes(model_id, rcd)) + geom_col(),
+  ggplot(modelSummary, aes(model_id, auc)) + geom_col(),
+  ggplot(modelSummary, aes(model_id, sensitivity)) + geom_col(),
+  nrow = 2
+)
+
+printOutput(cat(summaryText))
 
 ## downsample for plots
-datDownTest <- data.table(downSample(datTest, datTest$dy_payer))
+# datDownTest <- data.table(downSample(datTest, datTest$dy_payer))
 
 for(l in 1:length(modelFormulas)) {
   plot.roc(
@@ -234,18 +286,16 @@ for(l in 1:length(modelFormulas)) {
     print.auc = TRUE,
     main = paste('ROC curve for model', l)
   )
-  fitTemp <- predict.glm(models[[l]], newdata = datDownTest)
-  print(densityFeaturePlot(
-    x = fitTemp,
-    y = datDownTest$dy_payer,
-    main = paste('density of model', l, 'fit based on dy_payer'),
-    xlim = c(min(fitTemp), quantile(fitTemp, 0.95))
-  ))
+  # fitTemp <- predict.glm(models[[l]], newdata = datDownTest)
+  # print(densityFeaturePlot(
+  #   x = fitTemp,
+  #   y = datDownTest$dy_payer,
+  #   main = paste('density of model', l, 'fit based on dy_payer'),
+  #   xlim = c(min(fitTemp), quantile(fitTemp, 0.95))
+  # ))
   printOutput(summary(models[[l]]))
   printOutput(modelEvals[[l]][2:4])
   printOutput(modelEvals[[l]][5])
 }
-
-printOutput(cat(summaryText))
 
 dev.off()
