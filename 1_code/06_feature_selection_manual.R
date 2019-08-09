@@ -10,25 +10,22 @@
 # ---------------------------------------------------------------------------------------
 
 
-### Define stuff
-config <- list(
-  dataFile = 'payer_model_DA_GP&iOS_mkt_2019-01-01_2019-03-31.rds',
-  # dataFile = 'payer_model_DA_GP&iOS_mkt_2019-04-01_2019-06-30.rds',
-  # dataFile = 'payer_model_SY_GP&iOS_mkt_2019-01-01_2019-03-31.rds',
-  # dataFile = 'payer_model_SY_GP&iOS_mkt_2019-04-01_2019-06-30.rds',
-  trainRegDate = c('2019-01-01', '2019-01-31'),
-  testRegDate = c('2019-03-01', '2019-03-31')
-  # trainRegDate = c('2019-01-10', '2019-01-14'),
-  # testRegDate = c('2019-03-10', '2019-03-14')
-  # trainRegDate = c('2019-04-01', '2019-04-30'),
-  # testRegDate = c('2019-06-01', '2019-06-30')
-)
-
-
 ### Run utils
 source('1_code/utils/00_run_utils.R')
 packageTest('corrplot')
 packageTest('gridExtra')
+
+
+### Define stuff
+project <- 'SY'
+config <- list(
+  dataFile = 'payer_model_' %+% project %+% '_GP&iOS_mkt_2019-01-01_2019-03-31.rds',
+  # dataFile = 'payer_model_' %+% project %+% '_GP&iOS_mkt_2019-04-01_2019-06-30.rds',
+  trainRegDate = c('2019-01-01', '2019-01-31'),
+  testRegDate = c('2019-03-01', '2019-03-31')
+  # trainRegDate = c('2019-04-01', '2019-04-30'),
+  # testRegDate = c('2019-06-01', '2019-06-30')
+)
 
 
 ### Load data
@@ -154,11 +151,19 @@ corrP <- cor.mtest(corrMatrix)
       'dx_gems_spent'
     )),
     
-    # best model so far with tier
+    # best model so far with tier - DA
     as.formula(paste(
       'dy_payer ~',
       'dx_revenue +',
       'dx_session_time +',
+      'tier'
+    )),
+    # best model so far with tier - SY
+    as.formula(paste(
+      'dy_payer ~',
+      'dx_revenue +',
+      'dx_session_time +',
+      'dx_gems_spent +',
       'tier'
     )),
     
@@ -218,36 +223,66 @@ modelSummary <- data.frame(
   )
 )
 
-summaryText <- paste(
-  'Summary for DA:\n',
-  'Based on correlation matrix, these variables should not be together\n',
-  '  dx_session_time, dx_session_count, dx_login_count\n',
-  '  dx_pay_count, dx_revenue\n',
-  '  dx_gems_spent, dx_gems_count\n',
-  '  dx_gems_spent, dx_revenue\n',
-  '  dx_gems_spent, dx_pay_count\n',
-  'We will test 1-variable models\n',
-  '  dx_revenue ~ dx_pay_count (we choose revenue)\n',
-  '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
-  '  dx_gems_count > dx_gems_spent\n',
-  'Check session features with dx_revenue\n',
-  '  dx_session_count ~> dx_session_time > dx_login_count (time is cont.)\n',
-  'Check gem features with previous\n',
-  '  dx_gems_spent = dx_gems_count (spent is cont.)\n',
-  '  gems do not add anything and are correlated with revenue\n',
-  'Check tier\n',
-  '  it bends the ROC curve in a weird way but improves the model\n',
-  'Comparison with the full model that it has slightly better performance.\n',
-  'It should be compared with cross-validation whether this difference is robust.\n',
-  'Best model so far has: dx_revenue, dx_session_time, tier'
+summaryText <- switch(
+  project,
+  DA = paste(
+    'Summary for DA:\n',
+    'Based on correlation matrix, these variables should not be together\n',
+    '  dx_session_time, dx_session_count, dx_login_count\n',
+    '  dx_pay_count, dx_revenue\n',
+    '  dx_gems_spent, dx_gems_count\n',
+    '  dx_gems_spent, dx_revenue\n',
+    '  dx_gems_spent, dx_pay_count\n',
+    'We will test 1-variable models\n',
+    '  dx_revenue ~ dx_pay_count (we choose revenue)\n',
+    '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
+    '  dx_gems_count > dx_gems_spent\n',
+    'Check session features with dx_revenue\n',
+    '  dx_session_count ~> dx_session_time > dx_login_count (time is cont.)\n',
+    'Check gem features with previous\n',
+    '  dx_gems_spent = dx_gems_count (spent is cont.)\n',
+    '  gems do not add anything and are correlated with revenue\n',
+    'Check tier\n',
+    '  it bends the ROC curve in a weird way but improves the model\n',
+    'Comparison with the full model shows that it has slightly better performance.\n',
+    'It should be compared with cross-validation whether this difference is robust.\n',
+    'Best model so far has: dx_revenue, dx_session_time, tier'
+  ),
+  SY = paste(
+    'Summary for SY:\n',
+    'Based on correlation matrix, these variables should not be together\n',
+    '  dx_session_time, dx_session_count, dx_login_count\n',
+    '  dx_pay_count, dx_revenue\n',
+    '  dx_gems_spent, dx_gems_count\n',
+    '  dx_gems_spent, dx_revenue\n',
+    '  dx_gems_spent, dx_pay_count\n',
+    'We will test 1-variable models\n',
+    '  dx_revenue ~ dx_pay_count (we choose revenue)\n',
+    '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
+    '  dx_gems_spent > dx_gems_count\n',
+    'Check session features with dx_revenue\n',
+    '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
+    'Check gem features with previous\n',
+    '  dx_gems_spent > dx_gems_count\n',
+    '  even though gems_spent is correlated with revenue it makes a better model\n',
+    'Check tier\n',
+    '  tier barely improve the model\n',
+    'The full model is significantly better compared to reduced model.\n',
+    'It should be compared with cross-validation whether this difference is robust.\n',
+    'Best model so far has all variables.\n',
+    'Maybe removing the features from the full model makes sense.\n',
+    'Multicollinearity is present in the full model but is it a problem?'
+  )
 )
-# summaryText <- paste(
-#   'Summary for SY:\n'
-# )
 
 
 ### Print results
-filePathOutput <- file.path('2_output', '06_feature_selection_test_train.pdf')
+filePathOutput <- file.path(
+  '2_output',
+  '06_feature_selection_manual_' %+% project %+% '_' %+%
+    substr(config$trainRegDate[1], 6, 7) %+% '-' %+%
+    substr(config$testRegDate[2], 6, 7) %+% '.pdf'
+)
 pdf(filePathOutput)
 
 printOutput(config)
