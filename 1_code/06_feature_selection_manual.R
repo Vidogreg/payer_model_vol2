@@ -21,6 +21,8 @@ project <- 'SY'
 config <- list(
   dataFile = 'payer_model_' %+% project %+% '_GP&iOS_mkt_2019-01-01_2019-03-31.rds',
   # dataFile = 'payer_model_' %+% project %+% '_GP&iOS_mkt_2019-04-01_2019-06-30.rds',
+  # trainRegDate = c('2019-01-01', '2019-01-02'),
+  # testRegDate = c('2019-03-01', '2019-03-02')
   trainRegDate = c('2019-01-01', '2019-01-31'),
   testRegDate = c('2019-03-01', '2019-03-31')
   # trainRegDate = c('2019-04-01', '2019-04-30'),
@@ -84,104 +86,76 @@ corrP <- cor.mtest(corrMatrix)
 
 ### Train and evaluate models
 ## Define models
-{
-  modelFormulas <- list(
-    # one-variable models
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_revenue'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_pay_count'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_login_count'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_session_count'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_session_time'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_gems_count'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_gems_spent'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'tier'
-    )),
-    
-    # two-variable models (revenue + activity)
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_revenue +',
-      'dx_login_count'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_revenue +',
-      'dx_session_count'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_revenue +',
-      'dx_session_time'
-    )),
-    
-    # three-variable models(revenue + session_time + gems)
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_revenue +',
-      'dx_session_time +',
-      'dx_gems_count'
-    )),
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_revenue +',
-      'dx_session_time +',
-      'dx_gems_spent'
-    )),
-    
-    # best model so far with tier - DA
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_revenue +',
-      'dx_session_time +',
-      'tier'
-    )),
-    # best model so far with tier - SY
-    as.formula(paste(
-      'dy_payer ~',
-      'dx_revenue +',
-      'dx_session_time +',
-      'dx_gems_spent +',
-      'tier'
-    )),
-    
-    # full model for comparison
-    as.formula(paste(
-      'dy_payer ~',
-      'tier +',
-      'dx_pay_count +',
-      'dx_revenue +',
-      'dx_session_count +',
-      'dx_session_time +',
-      'dx_session_days +',
-      'dx_login_count +',
-      'dx_gems_count +',
-      'dx_gems_spent'
-    ))
+features <- c(
+  'dx_revenue',
+  'dx_pay_count',
+  'dx_login_count',
+  'dx_session_count',
+  'dx_session_time',
+  'dx_gems_count',
+  'dx_gems_spent',
+  'tier'
+)
+modelMatrix <- switch(
+  project,
+  DA = matrix(
+    c(
+      # 1-variable models
+      1, 0, 0, 0, 0, 0, 0, 0,
+      0, 1, 0, 0, 0, 0, 0, 0,
+      0, 0, 1, 0, 0, 0, 0, 0,
+      0, 0, 0, 1, 0, 0, 0, 0,
+      0, 0, 0, 0, 1, 0, 0, 0,
+      0, 0, 0, 0, 0, 1, 0, 0,
+      0, 0, 0, 0, 0, 0, 1, 0,
+      0, 0, 0, 0, 0, 0, 0, 1,
+      # 2-variable models (revenue + activity)
+      1, 0, 1, 0, 0, 0, 0, 0,
+      1, 0, 0, 1, 0, 0, 0, 0,
+      1, 0, 0, 0, 1, 0, 0, 0,
+      # 3-variable models(revenue + session_time + gems)
+      1, 0, 0, 0, 1, 1, 0, 0,
+      1, 0, 0, 0, 1, 0, 1, 0,
+      # best model so far with tier
+      1, 0, 0, 0, 1, 0, 0, 1,
+      # full model for comparison
+      1, 1, 1, 1, 1, 1, 1, 1
+    ),
+    nrow = length(features)
+  ),
+  SY = matrix(
+    c(
+      # 1-variable models
+      1, 0, 0, 0, 0, 0, 0, 0,
+      0, 1, 0, 0, 0, 0, 0, 0,
+      0, 0, 1, 0, 0, 0, 0, 0,
+      0, 0, 0, 1, 0, 0, 0, 0,
+      0, 0, 0, 0, 1, 0, 0, 0,
+      0, 0, 0, 0, 0, 1, 0, 0,
+      0, 0, 0, 0, 0, 0, 1, 0,
+      0, 0, 0, 0, 0, 0, 0, 1,
+      # 2-variable models (gem_spent + revenue)
+      1, 0, 0, 0, 0, 0, 1, 0,
+      0, 1, 0, 0, 0, 0, 1, 0,
+      # 2-variable models (revenue + activity)
+      1, 0, 1, 0, 0, 0, 0, 0,
+      1, 0, 0, 1, 0, 0, 0, 0,
+      1, 0, 0, 0, 1, 0, 0, 0,
+      # 3-variable models(gem_spent + revenue + activity)
+      1, 0, 1, 0, 0, 0, 1, 0,
+      1, 0, 0, 1, 0, 0, 1, 0,
+      1, 0, 0, 0, 1, 0, 1, 0,
+      # best model so far with tier
+      1, 0, 0, 0, 1, 0, 1, 1,
+      # full model for comparison
+      1, 1, 1, 1, 1, 1, 1, 1
+    ),
+    nrow = length(features)
   )
-}
+)
+rownames(modelMatrix) <- features
+colnames(modelMatrix) <- paste('m', 1:ncol(modelMatrix), sep = '')
+modelFormulas <- defineModelFormulas(modelMatrix)
 
 ## Train models
 models <- lapply(
@@ -194,15 +168,22 @@ models <- lapply(
     )
   }
 )
-print(paste(length(models), "models trained"))
+modelCutOffs <- lapply(
+  models,
+  function(m) {
+    calculateCutOff(datTrain$dy_payer, m$fitted.values)
+  }
+)
+print(paste(length(models), "models trained with cut-offs"))
 
 ## evaluate on test data
 modelEvals <- lapply(
-  models,
-  function(m) {
-    evalLogitModel(
+  1:length(models),
+  function(i) {
+    evalLogitModel2(
       ref = datTest$dy_payer,
-      fit = predict.glm(m, newdata = datTest, type = 'response')
+      fit = predict.glm(models[[i]], newdata = datTest, type = 'response'),
+      cutOff = modelCutOffs[[i]]
     )
   }
 )
@@ -212,7 +193,7 @@ modelSummary <- data.frame(
   model_id = 1:length(models),
   rank = sapply(models, function(m) {m$rank}),
   auc = sapply(modelEvals, function(m) {m$auc}),
-  cut_off = sapply(modelEvals, function(m) {m$cutOff}),
+  cut_off = unlist(modelCutOffs),
   rcd = sapply(modelEvals, function(m) {m$relativeCountDifference}),
   sensitivity = sapply(
     modelEvals,
@@ -223,57 +204,66 @@ modelSummary <- data.frame(
   )
 )
 
-summaryText <- switch(
-  project,
-  DA = paste(
-    'Summary for DA:\n',
-    'Based on correlation matrix, these variables should not be together\n',
-    '  dx_session_time, dx_session_count, dx_login_count\n',
-    '  dx_pay_count, dx_revenue\n',
-    '  dx_gems_spent, dx_gems_count\n',
-    '  dx_gems_spent, dx_revenue\n',
-    '  dx_gems_spent, dx_pay_count\n',
-    'We will test 1-variable models\n',
-    '  dx_revenue ~ dx_pay_count (we choose revenue)\n',
-    '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
-    '  dx_gems_count > dx_gems_spent\n',
-    'Check session features with dx_revenue\n',
-    '  dx_session_count ~> dx_session_time > dx_login_count (time is cont.)\n',
-    'Check gem features with previous\n',
-    '  dx_gems_spent = dx_gems_count (spent is cont.)\n',
-    '  gems do not add anything and are correlated with revenue\n',
-    'Check tier\n',
-    '  it bends the ROC curve in a weird way but improves the model\n',
-    'Comparison with the full model shows that it has slightly better performance.\n',
-    'It should be compared with cross-validation whether this difference is robust.\n',
-    'Best model so far has: dx_revenue, dx_session_time, tier'
-  ),
-  SY = paste(
-    'Summary for SY:\n',
-    'Based on correlation matrix, these variables should not be together\n',
-    '  dx_session_time, dx_session_count, dx_login_count\n',
-    '  dx_pay_count, dx_revenue\n',
-    '  dx_gems_spent, dx_gems_count\n',
-    '  dx_gems_spent, dx_revenue\n',
-    '  dx_gems_spent, dx_pay_count\n',
-    'We will test 1-variable models\n',
-    '  dx_revenue ~ dx_pay_count (we choose revenue)\n',
-    '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
-    '  dx_gems_spent > dx_gems_count\n',
-    'Check session features with dx_revenue\n',
-    '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
-    'Check gem features with previous\n',
-    '  dx_gems_spent > dx_gems_count\n',
-    '  even though gems_spent is correlated with revenue it makes a better model\n',
-    'Check tier\n',
-    '  tier barely improve the model\n',
-    'The full model is significantly better compared to reduced model.\n',
-    'It should be compared with cross-validation whether this difference is robust.\n',
-    'Best model so far has all variables.\n',
-    'Maybe removing the features from the full model makes sense.\n',
-    'Multicollinearity is present in the full model but is it a problem?'
+
+### Write summary
+{
+  summaryText <- switch(
+    project,
+    DA = paste(
+      'THIS SUMMARY IS OUTDATED\n',
+      'WE FOUND OUT THAT WE NEED CROSS-VALIDATION TO GET ROBUST RESULTS\n',
+      'Summary for DA:\n',
+      'Based on correlation matrix, these variables should not be together\n',
+      '  dx_session_time, dx_session_count, dx_login_count\n',
+      '  dx_pay_count, dx_revenue\n',
+      '  dx_gems_spent, dx_gems_count\n',
+      '  dx_gems_spent, dx_revenue\n',
+      '  dx_gems_spent, dx_pay_count\n',
+      'We will test 1-variable models\n',
+      '  dx_revenue ~ dx_pay_count (we choose revenue)\n',
+      '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
+      '  dx_gems_count > dx_gems_spent\n',
+      'Check session features with dx_revenue\n',
+      '  dx_session_count ~> dx_session_time > dx_login_count (time is cont.)\n',
+      'Check gem features with previous\n',
+      '  dx_gems_spent = dx_gems_count (spent is cont.)\n',
+      '  gems do not add anything and are correlated with revenue\n',
+      'Check tier\n',
+      '  it bends the ROC curve in a weird way but improves the model\n',
+      'Comparison with the full model shows that it has slightly better performance.\n',
+      'It should be compared with cross-validation whether this difference is robust.\n',
+      'Best model so far has: dx_revenue, dx_session_time, tier'
+    ),
+    SY = paste(
+      'THIS SUMMARY IS OUTDATED\n',
+      'WE FOUND OUT THAT WE NEED CROSS-VALIDATION TO GET ROBUST RESULTS\n',
+      'Summary for SY:\n',
+      'Based on correlation matrix, these variables should not be together\n',
+      '  dx_session_time, dx_session_count, dx_login_count\n',
+      '  dx_pay_count, dx_revenue\n',
+      '  dx_gems_spent, dx_gems_count\n',
+      '  dx_gems_spent, dx_revenue\n',
+      '  dx_gems_spent, dx_pay_count\n',
+      'We will test 1-variable models\n',
+      '  dx_revenue ~ dx_pay_count (we choose revenue)\n',
+      '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
+      '  dx_gems_spent > dx_gems_count\n',
+      'Check session features with dx_revenue\n',
+      '  dx_session_time > dx_session_count > dx_login_count (as expected)\n',
+      'Check gem features with previous\n',
+      '  dx_gems_spent > dx_gems_count\n',
+      '  even though gems_spent is correlated with revenue it makes a better model\n',
+      'Check tier\n',
+      '  tier barely improve the model\n',
+      'The full model is significantly better compared to reduced model.\n',
+      'It should be compared with cross-validation whether this difference is robust.\n',
+      'Best model so far has all variables.\n',
+      'Maybe removing the features from the full model makes sense.\n',
+      'Multicollinearity is present in the full model but is it a problem?\n',
+      'dx_gem_spent is suspiciocly good, is it robust? We need CV...'
+    )
   )
-)
+}
 
 
 ### Print results
@@ -298,8 +288,7 @@ corrplot(
   order = 'hclust', method = 'number', type = 'upper'
 )
 
-printOutput(modelFormulas[1:10])
-printOutput(modelFormulas[11:length(modelFormulas)])
+printOutput(modelMatrix)
 printOutput(modelSummary)
 grid.arrange(
   ggplot(modelSummary, aes(model_id, rank)) + geom_col(),
@@ -311,9 +300,6 @@ grid.arrange(
 
 printOutput(cat(summaryText))
 
-## downsample for plots
-# datDownTest <- data.table(downSample(datTest, datTest$dy_payer))
-
 for(l in 1:length(modelFormulas)) {
   plot.roc(
     modelEvals[[l]]$rocPlot,
@@ -321,16 +307,10 @@ for(l in 1:length(modelFormulas)) {
     print.auc = TRUE,
     main = paste('ROC curve for model', l)
   )
-  # fitTemp <- predict.glm(models[[l]], newdata = datDownTest)
-  # print(densityFeaturePlot(
-  #   x = fitTemp,
-  #   y = datDownTest$dy_payer,
-  #   main = paste('density of model', l, 'fit based on dy_payer'),
-  #   xlim = c(min(fitTemp), quantile(fitTemp, 0.95))
-  # ))
   printOutput(summary(models[[l]]))
-  printOutput(modelEvals[[l]][2:4])
-  printOutput(modelEvals[[l]][5])
+  printOutput(modelEvals[[l]][2:3])
+  printOutput(list(optimal_cut_off = modelCutOffs[[l]]))
+  printOutput(modelEvals[[l]][4])
 }
 
 dev.off()

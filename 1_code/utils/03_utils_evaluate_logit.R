@@ -60,3 +60,47 @@ evalLogitModel <- function(ref, fit) {
   )
   
 }
+
+
+evalLogitModel2 <- function(ref, fit, cutOff) {
+  
+  refFactor <- factor(ref)
+  if(length(levels(refFactor)) > 1) {
+    rocObj <- roc(
+      response = refFactor,
+      predictor = fit,
+      levels = c(FALSE, TRUE),
+      direction = '<',
+      auc = TRUE
+    )
+    
+    rocPlot <- plot.roc(
+      rocObj,
+      print.thres = TRUE,
+      print.auc = TRUE,
+      main = 'ROC curve'
+    )
+    
+    pred <- factor(fit >= cutOff, levels = c(FALSE, TRUE))
+    rcd <- length(pred[pred == TRUE])/length(ref[ref == TRUE])
+    
+    confMatrix <- confusionMatrix(
+      data = pred,
+      reference = refFactor,
+      positive = 'TRUE'
+    )
+  } else {
+    rocObj <- NULL
+    rocPlot <- list(auc = NULL)
+    rcd <- NULL
+    confMatrix <- NULL
+  }
+  
+  list(
+    rocPlot = rocPlot,
+    auc = rocObj$auc,
+    relativeCountDifference = rcd,
+    confMatrix = confMatrix
+  )
+  
+}
