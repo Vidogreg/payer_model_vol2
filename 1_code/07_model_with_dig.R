@@ -74,15 +74,31 @@ formulaString <- paste(
 ### Run cross-validation
 runCv <- function(dat, config) {
   
+  k <- config$cvRunCount
+  digs <- 0:7
+  digsCount <- length(digs)
+  
   cvResult <- data.frame(
-    cv_run_id = 1:config$cvRunCount,
-    train_positives = rep(NA, config$cvRunCount),
-    test_positives = rep(NA, config$cvRunCount),
-    dig_model_auc = rep(NA, config$cvRunCount),
-    dig_model_rcd = rep(NA, config$cvRunCount),
-    dig_model_sens = rep(NA, config$cvRunCount)
+    cv_run_id = 1:k,
+    train_positives = rep(NA, k),
+    test_positives = rep(NA, k),
+    dig_model_auc = rep(NA, k),
+    dig_model_rcd = rep(NA, k),
+    dig_model_sens = rep(NA, k),
+    dig_model_prec = rep(NA, k)
   )
   
+  cvResultDig <- data.frame(
+    cv_run_id = rep(NA, k*digsCount),
+    days_in_game = rep(NA, k*digsCount),
+    train_positives = rep(NA, k*digsCount),
+    test_positives = rep(NA, k*digsCount),
+    dig_model_rcd = rep(NA, k*digsCount),
+    dig_model_sens = rep(NA, k*digsCount),
+    dig_model_prec = rep(NA, k*digsCount)
+  )
+  
+  j <- 1
   for(i in 1:config$cvRunCount) {
     
     ## Sample the dataset
@@ -106,7 +122,7 @@ runCv <- function(dat, config) {
     datTrain$fit <- predict.glm(modelDig, newdata = datTrain, type = 'response')
     
     ## Calculate RCD-optimal cut-offs for each days_in_game with dig model
-    digs <- 0:7
+    
     cutOffs <- data.frame(
       days_in_game = digs,
       rcd_cut_off = sapply(
@@ -131,26 +147,46 @@ runCv <- function(dat, config) {
     TP <- nrow(datTestEval[dy_payer == TRUE & prediction == TRUE, ])
     FP <- nrow(datTestEval[dy_payer == FALSE & prediction == TRUE, ])
     FN <- nrow(datTestEval[dy_payer == TRUE & prediction == FALSE, ])
-    modelDigRcd <- (TP + FP)/(TP + FN)
-    modelDigSens <- TP/(TP + FN)
     
     ## Write results
     cvResult$train_positives[i] <- nrow(datTrain[dy_payer == TRUE])
     cvResult$test_positives[i] <- nrow(datTest[dy_payer == TRUE])
     cvResult$dig_model_auc[i] <- modelDigAuc
-    cvResult$dig_model_rcd[i] <- modelDigRcd
-    cvResult$dig_model_sens[i] <- modelDigSens
+    cvResult$dig_model_rcd[i] <- (TP + FP)/(TP + FN)
+    cvResult$dig_model_sens[i] <- TP/(TP + FN)
+    cvResult$dig_model_prec[i] <- TP/(TP + FP)
+    
+    for(dig in digs) {
+      
+      TP <- nrow(datTestEval[days_in_game == dig & dy_payer == TRUE & prediction == TRUE, ])
+      FP <- nrow(datTestEval[days_in_game == dig & dy_payer == FALSE & prediction == TRUE, ])
+      FN <- nrow(datTestEval[days_in_game == dig & dy_payer == TRUE & prediction == FALSE, ])
+      modelDigRcd <- (TP + FP)/(TP + FN)
+      modelDigSens <- TP/(TP + FN)
+      modelDigPrec <- TP/(TP + FP)
+      
+      cvResultDig$cv_run_id[j] <- i
+      cvResultDig$days_in_game[j] <- dig
+      cvResultDig$train_positives[j] <- nrow(datTrain[days_in_game == dig & dy_payer == TRUE])
+      cvResultDig$test_positives[j] <- nrow(datTest[days_in_game == dig & dy_payer == TRUE])
+      cvResultDig$dig_model_rcd[j] <- (TP + FP)/(TP + FN)
+      cvResultDig$dig_model_sens[j] <- TP/(TP + FN)
+      cvResultDig$dig_model_prec[j] <- TP/(TP + FP)
+      
+      j <- j + 1
+      
+    }
     
     print(paste('CV', i, 'complete'))
     
   }
   
-  cvResult
+  list(all = cvResult, by_dig = cvResultDig)
   
 }
 
 set.seed(config$seed)
-cvResult <- runCv(dat, config)
+result <- runCv(dat, config)
 
 
 
@@ -163,16 +199,55 @@ plotHistogram <- function(df, colName, bins = 16) {
     ) +
     geom_density(alpha = 0.1, fill = 'blue', color = 'blue')
 }
+plotBoxPlotDig <- function(df, yColName, yLab) {
+  ggplot(result$by_dig, aes(x = as.factor(days_in_game))) +
+    geom_boxplot(aes_string(y = yColName)) +
+    xlab('days_in_game') +
+    ylab(yLab)
+}
 
 filePathOutput <- file.path('2_output', '07_model_with_dig.pdf')
 pdf(filePathOutput)
 
 printOutput(config)
-printOutput(summary(cvResult), 0.5)
-printOutput(cvResult, 0.5)
+printOutput(summary(result$all), 0.5)
+printOutput(result$all, 0.5)
 
-print(plotHistogram(cvResult, 'dig_model_auc'))
-print(plotHistogram(cvResult, 'dig_model_rcd'))
-print(plotHistogram(cvResult, 'dig_model_sens'))
+print(plotHistogram(result$all, 'dig_model_auc'))
+print(plotHistogram(result$all, 'dig_model_rcd'))
+print(plotHistogram(result$all, 'dig_model_sens'))
+
+print(
+  ggplot(
+    melt(
+      dat %>%
+        group_by(days_in_game) %>%
+        summarize(
+          'dy_conv' = mean(as.numeric(dy_payer) - 1),
+          'dx_conv' = mean(if_else(dx_pay_count > 0, 1, 0))
+        ),
+      id.var = 'days_in_game'
+    ),
+    aes(x = days_in_game, y = value, col = variable)
+  ) + geom_line(size = 1.2) +
+    ggtitle('Changes in dx_payer and dy_payer with days_in_game')
+)
+
+print(plotBoxPlotDig(result$by_dig, 'dig_model_rcd', 'relative count difference'))
+print(plotBoxPlotDig(result$by_dig, 'dig_model_sens', 'sensitivity'))
+print(plotBoxPlotDig(result$by_dig, 'dig_model_prec', 'precision'))
 
 dev.off()
+
+
+
+
+# # exploration of changes in predictions by dig per player
+# x <- datTestEval[, c('player_id', 'days_in_game', 'dx_pay_count', 'dy_payer', 'prediction')]
+# x$dy_payer <- as.logical(x$dy_payer)
+# x2 <- data.table(
+#   x %>%
+#     group_by(player_id) %>%
+#     summarize(any_pay = any(as.logical(dy_payer), prediction))
+# )
+# x[player_id == sample(x2[any_pay == TRUE, ]$player_id, 1), ]
