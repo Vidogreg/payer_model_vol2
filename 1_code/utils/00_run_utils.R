@@ -28,4 +28,5 @@ for(fileName in fileArray) {
 packageTest('data.table')
 packageTest('caret')
 packageTest('pROC')
+packageTest('ROCR')
 # packageTest('PRROC')
