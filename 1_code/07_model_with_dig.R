@@ -10,7 +10,7 @@ library(dplyr)
 
 ## Define stuff
 project <- 'DA'
-platform <- 'google_play'
+platform <- 'apple_appstore'
 config <- list(
   project = project,
   platform = platform,
@@ -33,7 +33,7 @@ dfLoad <- loadRds(filePathData, 'dfLoad')
 
 ## Define the whole dataset
 dat <- dfLoad[
-  register_platform == 'google_play' &
+  register_platform == config$platform &
     source == 'marketing',
   c(
     'player_id',
@@ -66,7 +66,8 @@ formulaString <- paste(
   'dx_login_count +',
   'dx_gems_count +',
   'dx_gems_spent +',
-  'tier'
+  'tier +',
+  'days_in_game'
 )
 
 
@@ -115,7 +116,7 @@ runCv <- function(dat, config) {
     
     ## Train dig model
     modelDig <- glm(
-      formula = paste(formulaString, '+ days_in_game'),
+      formula = formulaString,
       data = datTrain,
       family = 'binomial'
     )
