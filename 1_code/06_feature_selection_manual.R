@@ -17,7 +17,7 @@ packageTest('gridExtra')
 
 
 ### Define stuff
-project <- 'SY'
+project <- 'DA'
 config <- list(
   dataFile = 'payer_model_' %+% project %+% '_GP&iOS_mkt_2019-01-01_2019-03-31.rds',
   # dataFile = 'payer_model_' %+% project %+% '_GP&iOS_mkt_2019-04-01_2019-06-30.rds',

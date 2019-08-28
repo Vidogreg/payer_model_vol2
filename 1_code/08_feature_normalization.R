@@ -11,6 +11,8 @@ conclusion <- paste(
   'Transformation by Box-Cox together with scaling seems to slightly improve',
   'the performance of the model. We should run CV to be sure, since',
   'this is only one sample.',
+  'But transformation definitely has some potential, since we can see in the histograms',
+  'that the transformed fit better distinguishes between positives and negatives.',
   sep = '\n'
 )
 
@@ -174,11 +176,32 @@ evalModel <- function(mod, cutOff, datTest, title = '', note = '') {
   ## model performance with RCD-optimal cut-off
   printOutput(list(
     note = note,
+    rcd_optimal_cut_off = cutOff,
     rcd_optimal_confusion_matrix = modConfMatrix,
     sensitivity = TP/(TP + FN),
     precision = TP/(TP + FP),
     relative_count_difference = (FP + TP)/(FN + TP)
   ))
+  
+  ## print downsampled plots
+  datTestEvalDown <- data.table(
+    downSample(
+      x = datTestEval[, -ncol(datTestEval), with = F],
+      y = datTestEval$dy_payer
+    )
+  )
+  X <- datTestEvalDown[, c('fit')]
+  y <- datTestEvalDown$dy_payer
+  print(densityFeaturePlot(X, y))
+  print(boxFeaturePlot(X, y))
+  print(
+    ggplot(datTestEvalDown %>% filter(dy_payer == TRUE), aes(x = fit)) +
+      geom_histogram(bins = 40) + ggtitle('dy_payer == TRUE')
+  )
+  print(
+    ggplot(datTestEvalDown %>% filter(dy_payer == FALSE), aes(x = fit)) +
+      geom_histogram(bins = 40) + ggtitle('dy_payer == TRUE')
+  )
 }
 
 filePathOutput <- file.path('2_output', '08_feature_transformation.pdf')

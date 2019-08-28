@@ -9,10 +9,8 @@
 # ---------------------------------------------------------------------------------------
 
 ### Define config variables
-trainRegDate <- c('2019-02-01', '2019-03-31')
-testRegDate <- c('2019-05-01', '2019-05-31')
-# trainRegDate <- c('2019-02-01', '2019-02-01')
-# testRegDate <- c('2019-05-01', '2019-05-01')
+trainRegDate <- c('2019-04-01', '2019-04-30')
+testRegDate <- c('2019-06-01', '2019-06-30')
 
 
 ### Run utils
@@ -20,7 +18,7 @@ source('1_code/utils/00_run_utils.R')
 
 
 ### Load data
-fileName <- 'payer_model_DA_GP&iOS_mkt_2019-02-01_2019-05-31.rds'
+fileName <- 'payer_model_DA_GP&iOS_mkt_2019-04-01_2019-06-30.rds'
 if(!exists('dfLoad')) {
   dfLoad <- data.table(readRDS(
     file.path('0_data', fileName)

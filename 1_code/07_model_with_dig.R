@@ -9,14 +9,16 @@ library(dplyr)
 # library(profvis)
 
 ## Define stuff
-project <- 'DA'
-platform <- 'apple_appstore'
+project <- 'SY'
+platform <- 'google_play'
+# platform <- 'apple_appstore'
 config <- list(
   project = project,
   platform = platform,
   # dataFile = 'payer_model_' %+% project %+% '_GP&iOS_mkt_2019-01-01_2019-03-31.rds',
   dataFile = 'payer_model_' %+% project %+% '_GP&iOS_mkt_2019-04-01_2019-06-30.rds',
   sampleSize = 200000,
+  # sampleSize = 150000,
   testSampleSplit = 0.5,
   cvRunCount = 40,
   seed = 1024
@@ -230,7 +232,9 @@ print(
       id.var = 'days_in_game'
     ),
     aes(x = days_in_game, y = value, col = variable)
-  ) + geom_line(size = 1.2) +
+  ) +
+    geom_line(size = 1.2) +
+    expand_limits(y = 0) +
     ggtitle('Changes in dx_payer and dy_payer with days_in_game')
 )
 

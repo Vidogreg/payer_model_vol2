@@ -22,7 +22,11 @@ packageTest('plyr')
 hiveTableFeat <- 'payer_model_features'
 hiveTableLab <- 'payer_model_labels'
 project <- 'DA'
+# project <- 'SY'
+# project <- 'TSM'
+# registerDateFrom <- '2019-01-01'
 registerDateFrom <- '2019-04-01'
+# registerDateTo <- '2019-03-31'
 registerDateTo <- '2019-06-30'
 
 con <- DBI::dbConnect(
@@ -125,4 +129,4 @@ fileName <- paste(
   sep = ''
 )
 saveRDS(dfFinal, file = file.path('0_data', fileName))
-print(paste(Sys.time(), fileName, 'saved to memory'))
+print(paste(Sys.time(), fileName, 'saved in hard drive'))
