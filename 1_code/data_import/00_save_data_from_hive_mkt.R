@@ -21,13 +21,15 @@ packageTest('plyr')
 ## Define variables
 hiveTableFeat <- 'payer_model_features'
 hiveTableLab <- 'payer_model_labels'
-project <- 'DA'
+# project <- 'DA'
 # project <- 'SY'
-# project <- 'TSM'
+project <- 'TSM'
 # registerDateFrom <- '2019-01-01'
-registerDateFrom <- '2019-04-01'
+# registerDateFrom <- '2019-04-01'
+registerDateFrom <- '2019-06-01'
 # registerDateTo <- '2019-03-31'
-registerDateTo <- '2019-06-30'
+# registerDateTo <- '2019-06-30'
+registerDateTo <- '2019-08-31'
 
 con <- DBI::dbConnect(
   odbc::odbc(),
